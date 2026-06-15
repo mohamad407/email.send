@@ -9,7 +9,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ── Middleware ──────────────────────────────────────────
-app.use(cors());                     // Allow frontend to call this API
+app.use(cors({
+  origin: ["https://email-send-red.vercel.app/", "http://localhost:3000"]
+}));                   // Allow frontend to call this API
 app.use(express.json());             // Parse JSON request bodies
 
 // ── In-memory OTP storage ──────────────────────────────
