@@ -1,8 +1,7 @@
 // script.js — Frontend logic for OTP signup flow
 
 // ── DOM Elements ─────────────────────────────────────────
-const API_BASE = "http://localhost:5000";
-
+const API_BASE = "https://email-send-uix3.onrender.com";
 const signupForm = document.getElementById("signup-form");
 const verifyForm = document.getElementById("verify-form");
 const successSection = document.getElementById("success-section");
