@@ -350,11 +350,17 @@ resendBtn.addEventListener("click", async () => {
   resendBtn.textContent = "Sending...";
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+
     const response = await fetch(`${API_BASE}/send-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeout);
 
     const data = await response.json();
 
@@ -368,7 +374,11 @@ resendBtn.addEventListener("click", async () => {
     showToast("New OTP sent! Check your inbox.", "success");
 
   } catch (error) {
-    showToast(error.message, "error");
+    if (error.name === "AbortError") {
+      showToast("Request timed out. Try again.", "error");
+    } else {
+      showToast(error.message, "error");
+    }
   } finally {
     resendBtn.disabled = false;
     resendBtn.textContent = "Resend code";
