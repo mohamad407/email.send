@@ -228,7 +228,6 @@ signupForm.addEventListener("submit", async (e) => {
   const name = nameInput.value.trim();
   const email = emailInput.value.trim();
 
-  // Basic client-side validation
   if (!name) {
     showToast("Please enter your name.", "error");
     nameInput.focus();
@@ -242,16 +241,24 @@ signupForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  // Show loading state on button
   sendBtn.classList.add("loading");
   sendBtn.disabled = true;
 
+  // Show a message while waiting (handles Render cold start)
+  showToast("Sending OTP... please wait (may take up to 60 seconds on first try).", "success");
+
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+
     const response = await fetch(`${API_BASE}/send-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeout);
 
     const data = await response.json();
 
@@ -259,19 +266,19 @@ signupForm.addEventListener("submit", async (e) => {
       throw new Error(data.message || "Failed to send OTP.");
     }
 
-    // OTP sent successfully — switch to verify step
     sentEmailDisplay.textContent = email;
     clearOTPInputs();
     goToStep(2);
     startTimer();
-
-    // Focus the first OTP input
     setTimeout(() => otpDigits[0].focus(), 100);
-
     showToast("OTP sent! Check your inbox.", "success");
 
   } catch (error) {
-    showToast(error.message, "error");
+    if (error.name === "AbortError") {
+      showToast("Request timed out. Server might be waking up. Try again.", "error");
+    } else {
+      showToast(error.message, "error");
+    }
   } finally {
     sendBtn.classList.remove("loading");
     sendBtn.disabled = false;
