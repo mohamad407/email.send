@@ -297,16 +297,21 @@ verifyForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  // Show loading state
   verifyBtn.classList.add("loading");
   verifyBtn.disabled = true;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+
     const response = await fetch(`${API_BASE}/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeout);
 
     const data = await response.json();
 
@@ -314,21 +319,20 @@ verifyForm.addEventListener("submit", async (e) => {
       throw new Error(data.message || "Verification failed.");
     }
 
-    // Success — stop timer and go to success step
     stopTimer();
     document.getElementById("success-name").textContent = nameInput.value.trim();
     goToStep(3);
 
   } catch (error) {
-    showToast(error.message, "error");
-
-    // Shake the OTP inputs on error for feedback
+    if (error.name === "AbortError") {
+      showToast("Request timed out. Try again.", "error");
+    } else {
+      showToast(error.message, "error");
+    }
     const group = document.querySelector(".otp-input-group");
     group.style.animation = "none";
-    void group.offsetWidth; // Force reflow
+    void group.offsetWidth;
     group.style.animation = "shake 0.4s ease";
-
-    // Clear OTP inputs after wrong attempt
     clearOTPInputs();
     setTimeout(() => otpDigits[0].focus(), 400);
   } finally {
